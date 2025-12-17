@@ -2,7 +2,7 @@ import axios from "axios";
 import { RepositoryItem } from "../interfaces/RepositoryItem";
 
 const GITHUB_API_URL = "https://api.github.com"
-const GITHUB_API_TOKEN = "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" //Remplaza con un token exitoso.
+const GITHUB_API_TOKEN = "ghp_xxxxxxxxxxxxxxxxxxxxx" //Remplaza con un token exitoso.
 
 export const fetchRepositories = async (): Promise<RepositoryItem[]> => {
   try{
