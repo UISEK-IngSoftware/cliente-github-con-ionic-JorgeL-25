@@ -1,8 +1,32 @@
-import { IonContent, IonHeader, IonList, IonPage, IonTitle, IonToolbar } from '@ionic/react';
-import './Tab1.css';
-import RepoItem from '../components/RepoItem';
+import React from "react";
+import {
+  IonContent,
+  IonHeader,
+  IonList,
+  IonPage,
+  IonTitle,
+  IonToolbar,
+  useIonViewDidEnter,
+} from "@ionic/react";
+import "./Tab1.css";
+import RepoItem from "../components/RepoItem";
+import { fetchRepositories } from "../services/GithubService";
+import { RepositoryItem } from "../interfaces/RepositoryItem";
 
 const Tab1: React.FC = () => {
+
+  const [repos, setRepos] = React.useState<RepositoryItem[]>([]);
+  
+  const loadRepos = async () => {
+    const reposData = await fetchRepositories();
+    setRepos(reposData);
+  }
+
+  useIonViewDidEnter(() => {
+    console.log("****** Cargando respositorios ******");
+    loadRepos();
+  })
+
   return (
     <IonPage>
       <IonHeader>
@@ -17,10 +41,10 @@ const Tab1: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         <IonList>
-          <RepoItem name='android-repo' imageUrl='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT-WfZcJTcJ9dxzEXp02aEkGhnHNK8OjqTZ0g&s'/>
-          <RepoItem name='ios-repo' imageUrl='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTEDGcD3eM-a1ypRE2_IobXQnadQ4DACw3CrQ&s'/>
-          <RepoItem name='ionic-repo' imageUrl='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQNYnQXVfoegwoeFt9wJO05m51WML8DdyCQIQ&s'/>
-        </IonList>
+          {repos.map((repo, index) => (
+            <RepoItem key={index} repo={repo} />
+          ))}        
+          </IonList>
       </IonContent>
     </IonPage>
   );
