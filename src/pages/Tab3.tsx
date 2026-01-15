@@ -1,33 +1,83 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
-import { IonCard, IonCardContent, IonCardHeader, IonCardSubtitle, IonCardTitle } from '@ionic/react';
-import './Tab3.css';
+import React, { useState } from "react";
+import {
+  IonContent,
+  IonHeader,
+  IonPage,
+  IonTitle,
+  IonToolbar,
+  IonCard,
+  IonCardContent,
+  IonCardHeader,
+  IonCardSubtitle,
+  IonCardTitle,
+  IonLoading,
+  IonToast,
+  useIonViewDidEnter,
+} from "@ionic/react";
+import { getUserInfo } from "../services/GithubService";
+import { UserInfo } from "../interfaces/UserInfo";
+import "./Tab3.css";
 
 const Tab3: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  // State UI (similar al video, pero tipado)
+  const [userInfo, setUserInfo] = useState({
+    name: "No se puede cargar el usuario",
+    username: "no-username",
+    bio: "No se puede cargar la biografía",
+    avatar_url: "https://ionicframework.com/docs/img/demos/card-media.png",
+  });
+
+  const loadUserInfo = async () => {
+    try {
+      setLoading(true);
+      setErrorMsg("");
+
+      const response: UserInfo = await getUserInfo();
+
+      setUserInfo({
+        name: response.name || "Sin nombre",
+        username: response.login,
+        bio: response.bio || "Sin bio",
+        avatar_url: response.avatar_url,
+      });
+    } catch (e: any) {
+      setErrorMsg(e.message || "Error cargando usuario");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useIonViewDidEnter(() => {
+    loadUserInfo();
+  });
+
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Perfil Usuario</IonTitle>
+          <IonTitle>Usuario</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent fullscreen>
-        <IonHeader collapse="condense">
-          <IonToolbar>
-            <IonTitle size="large">Perfil Usuario</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-        <IonCard>
-          <img 
-            alt="Usuario Jorge" 
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQz1mHFSD9UAf9NKkI7_buBIIOdn6AY5rxqAA&s" />
-          <IonCardHeader>
-            <IonCardTitle>Jorge Hinojosa</IonCardTitle>
-            <IonCardSubtitle>joge.hinojosa</IonCardSubtitle>
-          </IonCardHeader>
 
-          <IonCardContent>
-            Una nueva forma de aprender es observar y aplicar en tu vida cotidiana, sin embargo puede aplicar lo que tu gustes en tu vida.
-          </IonCardContent>
+      <IonContent fullscreen>
+        <IonLoading isOpen={loading} message="Cargando usuario..." />
+        <IonToast
+          isOpen={!!errorMsg}
+          message={errorMsg}
+          duration={3000}
+          onDidDismiss={() => setErrorMsg("")}
+        />
+
+        <IonCard className="card">
+          <img alt="avatar" src={userInfo.avatar_url} />
+          <IonCardHeader>
+            <IonCardTitle>{userInfo.name}</IonCardTitle>
+            <IonCardSubtitle>{userInfo.username}</IonCardSubtitle>
+          </IonCardHeader>
+          <IonCardContent>{userInfo.bio}</IonCardContent>
         </IonCard>
       </IonContent>
     </IonPage>
