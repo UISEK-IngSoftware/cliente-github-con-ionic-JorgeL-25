@@ -1,88 +1,72 @@
 import axios from "axios";
 import { RepositoryItem } from "../interfaces/RepositoryItem";
 import { UserInfo } from "../interfaces/UserInfo";
+import { getAuth } from "../auth";
 
-const GITHUB_API_URL =
-  import.meta.env.VITE_GITHUB_API_URL || "https://api.github.com";
-const RAW_TOKEN = import.meta.env.VITE_GITHUB_API_TOKEN;
+const GITHUB_API_URL = import.meta.env.VITE_GITHUB_API_URL || "https://api.github.com";
 
-//Headers centralizados (evita 401)
-const authHeaders = () => {
-  if (!RAW_TOKEN) {
-    throw new Error("Token no encontrado. Revisa .env y reinicia npm run dev");
+const authHeaders = async () => {
+  const auth = await getAuth();
+  if (!auth?.token) {
+    throw new Error("No hay sesión. Inicia sesión nuevamente.");
   }
 
   return {
-    Authorization: `Bearer ${RAW_TOKEN}`,
+    Authorization: `Bearer ${auth.token}`,
     Accept: "application/vnd.github+json",
   };
 };
 
-//GET /user/repos
+// GET /user/repos
 export const fetchRepositories = async (): Promise<RepositoryItem[]> => {
-  try {
-    const response = await axios.get(`${GITHUB_API_URL}/user/repos`, {
-      headers: authHeaders(),
-      params: {
-        per_page: 100,
-        sort: "created",
-        direction: "desc",
-        affiliation: "owner",
-      },
-    });
+  const headers = await authHeaders();
 
-    return response.data.map((repo: any) => ({
-      name: repo.name,
-      description: repo.description || null,
-      imageUrl: repo.owner?.avatar_url || null,
-      owner: repo.owner?.login || null,
-      language: repo.language || null,
-    })) as RepositoryItem[];
-  } catch (error: any) {
-    console.error("Error fetching repositories:", error?.response?.data || error);
-    throw new Error(
-      error?.response?.data?.message || "Error obteniendo repositorios"
-    );
-  }
+  const response = await axios.get(`${GITHUB_API_URL}/user/repos`, {
+    headers,
+    params: {
+      per_page: 100,
+      sort: "created",
+      direction: "desc",
+      affiliation: "owner",
+    },
+  });
+
+  return response.data.map((repo: any) => ({
+    name: repo.name,
+    description: repo.description || null,
+    imageUrl: repo.owner?.avatar_url || null,
+    owner: repo.owner?.login || null,
+    language: repo.language || null,
+  })) as RepositoryItem[];
 };
 
-//GET /user (tipado)
+// GET /user
 export const getUserInfo = async (): Promise<UserInfo> => {
-  try {
-    const response = await axios.get(`${GITHUB_API_URL}/user`, {
-      headers: authHeaders(),
-    });
-    return response.data as UserInfo;
-  } catch (error: any) {
-    console.error("Error fetching user info:", error?.response?.data || error);
-    throw new Error(error?.response?.data?.message || "Error obteniendo usuario");
-  }
+  const headers = await authHeaders();
+  const response = await axios.get(`${GITHUB_API_URL}/user`, { headers });
+  return response.data as UserInfo;
 };
 
-//POST /user/repos
+// POST /user/repos
 export const createRepository = async (payload: {
   name: string;
   description?: string;
   private?: boolean;
 }) => {
-  try {
-    const response = await axios.post(`${GITHUB_API_URL}/user/repos`, payload, {
-      headers: authHeaders(),
-    });
+  const headers = await authHeaders();
 
+  try {
+    const response = await axios.post(`${GITHUB_API_URL}/user/repos`, payload, { headers });
     return response.data;
   } catch (error: any) {
     const status = error?.response?.status;
-    const msg = error?.response?.data?.message;
 
-    // 422 suele ser: nombre repetido o inválido
     if (status === 422) {
       throw new Error(
         "No se pudo crear el repo (422). Probablemente el nombre ya existe o es inválido. Usa un nombre único sin espacios."
       );
     }
 
-    console.error("Error creating repo:", error?.response?.data || error);
-    throw new Error(msg || "Error creando repositorio");
+    throw new Error(error?.response?.data?.message || "Error creando repositorio");
   }
 };

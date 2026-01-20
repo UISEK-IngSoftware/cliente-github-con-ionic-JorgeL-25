@@ -1,28 +1,29 @@
 import React, { useState } from "react";
 import {
-  IonContent,
-  IonHeader,
   IonPage,
-  IonTitle,
+  IonHeader,
   IonToolbar,
+  IonTitle,
+  IonContent,
   IonCard,
-  IonCardContent,
   IonCardHeader,
-  IonCardSubtitle,
   IonCardTitle,
+  IonCardSubtitle,
+  IonCardContent,
   IonLoading,
   IonToast,
+  IonButton,
   useIonViewDidEnter,
 } from "@ionic/react";
-import { getUserInfo } from "../services/GithubService";
-import { UserInfo } from "../interfaces/UserInfo";
 import "./Tab3.css";
+
+import { getUserInfo } from "../services/GithubService";
+import { clearAuth } from "../auth";
 
 const Tab3: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // State UI (similar al video, pero tipado)
   const [userInfo, setUserInfo] = useState({
     name: "No se puede cargar el usuario",
     username: "no-username",
@@ -35,17 +36,36 @@ const Tab3: React.FC = () => {
       setLoading(true);
       setErrorMsg("");
 
-      const response: UserInfo = await getUserInfo();
+      const response = await getUserInfo();
 
       setUserInfo({
-        name: response.name || "Sin nombre",
-        username: response.login,
-        bio: response.bio || "Sin bio",
-        avatar_url: response.avatar_url,
+        name: response?.name ?? "Sin nombre",
+        username: response?.login ?? "sin-username",
+        bio: response?.bio ?? "Sin bio",
+        avatar_url:
+          response?.avatar_url ??
+          "https://ionicframework.com/docs/img/demos/card-media.png",
       });
     } catch (e: any) {
       setErrorMsg(e.message || "Error cargando usuario");
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      setLoading(true);
+      setErrorMsg("");
+
+      // 1) borrar token/usuario
+      await clearAuth();
+
+      // 2) forzar recarga completa a /login
+      // (esto hace que App.tsx vuelva a leer Storage y ponga isAuth=false)
+      window.location.replace("/login");
+    } catch (e: any) {
+      setErrorMsg(e.message || "Error al cerrar sesión");
       setLoading(false);
     }
   };
@@ -58,12 +78,12 @@ const Tab3: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Usuario</IonTitle>
+          <IonTitle>Mi Perfil</IonTitle>
         </IonToolbar>
       </IonHeader>
 
       <IonContent fullscreen>
-        <IonLoading isOpen={loading} message="Cargando usuario..." />
+        <IonLoading isOpen={loading} message="Cargando..." />
         <IonToast
           isOpen={!!errorMsg}
           message={errorMsg}
@@ -73,11 +93,19 @@ const Tab3: React.FC = () => {
 
         <IonCard className="card">
           <img alt="avatar" src={userInfo.avatar_url} />
+
           <IonCardHeader>
             <IonCardTitle>{userInfo.name}</IonCardTitle>
-            <IonCardSubtitle>{userInfo.username}</IonCardSubtitle>
+            <IonCardSubtitle>@{userInfo.username}</IonCardSubtitle>
           </IonCardHeader>
-          <IonCardContent>{userInfo.bio}</IonCardContent>
+
+          <IonCardContent>
+            <p>{userInfo.bio}</p>
+
+            <IonButton expand="block" color="danger" onClick={logout}>
+              Cierra tu sesión
+            </IonButton>
+          </IonCardContent>
         </IonCard>
       </IonContent>
     </IonPage>

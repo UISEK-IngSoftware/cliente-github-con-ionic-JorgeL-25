@@ -1,40 +1,39 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   IonContent,
   IonHeader,
-  IonList,
-  IonLoading,
   IonPage,
   IonTitle,
-  IonToast,
   IonToolbar,
+  IonList,
+  IonLoading,
+  IonToast,
   useIonViewDidEnter,
 } from "@ionic/react";
-import "./Tab1.css";
 import RepoItem from "../components/RepoItem";
-import { fetchRepositories } from "../services/GithubService";
 import { RepositoryItem } from "../interfaces/RepositoryItem";
+import { fetchRepositories } from "../services/GithubService";
 
 const Tab1: React.FC = () => {
-  const [repos, setRepos] = React.useState<RepositoryItem[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const [errorMsg, setErrorMsg] = React.useState("");
+  const [repos, setRepos] = useState<RepositoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
 
   const loadRepos = async () => {
     try {
       setLoading(true);
-      setErrorMsg("");
-      const reposData = await fetchRepositories();
-      setRepos(reposData);
+      setMsg("");
+
+      const data = await fetchRepositories();
+      setRepos(data);
     } catch (e: any) {
-      setErrorMsg(e.message || "Error cargando repositorios");
+      setMsg(e.message || "Error cargando repositorios");
     } finally {
       setLoading(false);
     }
   };
 
   useIonViewDidEnter(() => {
-    console.log("****** Cargando repositorios ******");
     loadRepos();
   });
 
@@ -47,23 +46,17 @@ const Tab1: React.FC = () => {
       </IonHeader>
 
       <IonContent fullscreen>
-        <IonLoading isOpen={loading} message="Cargando repositorios..." />
+        <IonLoading isOpen={loading} message="Cargando..." />
         <IonToast
-          isOpen={!!errorMsg}
-          message={errorMsg}
+          isOpen={!!msg}
+          message={msg}
           duration={2500}
-          onDidDismiss={() => setErrorMsg("")}
+          onDidDismiss={() => setMsg("")}
         />
 
-        <IonHeader collapse="condense">
-          <IonToolbar>
-            <IonTitle size="large">Repositorios</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-
         <IonList>
-          {repos.map((repo, index) => (
-            <RepoItem key={index} repo={repo} />
+          {repos.map((r) => (
+            <RepoItem key={r.name} repo={r} />
           ))}
         </IonList>
       </IonContent>
