@@ -1,6 +1,11 @@
-import { Storage } from "@ionic/storage";
+import { Storage, Drivers } from "@ionic/storage";
 
-const storage = new Storage();
+const storage = new Storage({
+  name: "github_client_db",
+  driverOrder: [Drivers.IndexedDB, Drivers.LocalStorage],
+});
+
+//create() SOLO una vez (singleton)
 let storageReady: Promise<Storage> | null = null;
 
 export const initStorage = async () => {

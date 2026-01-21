@@ -27,15 +27,26 @@ const Tab1: React.FC = () => {
       const data = await fetchRepositories();
       setRepos(data);
     } catch (e: any) {
-      setMsg(e.message || "Error cargando repositorios");
+      setMsg(e?.message || "Error cargando repositorios");
     } finally {
       setLoading(false);
     }
   };
 
+  // Se ejecuta cada vez que entras a Tab1 (recomendado para que esté actualizado)
   useIonViewDidEnter(() => {
     loadRepos();
   });
+
+  // BORRA DE LA UI al instante cuando RepoItem confirma que se eliminó
+  const handleRepoDeleted = (fullName: string) => {
+    setRepos((prev) =>
+      prev.filter((r: any) => {
+        const rFullName = r.fullName || `${r.owner ?? ""}/${r.name}`;
+        return rFullName !== fullName;
+      })
+    );
+  };
 
   return (
     <IonPage>
@@ -55,9 +66,17 @@ const Tab1: React.FC = () => {
         />
 
         <IonList>
-          {repos.map((r) => (
-            <RepoItem key={r.name} repo={r} />
-          ))}
+          {repos.map((r: any) => {
+            const key = r.fullName || `${r.owner}-${r.name}`;
+            return (
+              <RepoItem
+                key={key}
+                repo={r}
+                onChanged={loadRepos}           
+                onDeleted={handleRepoDeleted}  
+              />
+            );
+          })}
         </IonList>
       </IonContent>
     </IonPage>
