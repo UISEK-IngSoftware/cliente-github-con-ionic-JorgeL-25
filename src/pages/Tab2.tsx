@@ -34,6 +34,8 @@ const Tab2: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (loading) return; //evita doble clic
+
     const err = validate();
     if (err) {
       setErrorMsg(err);
@@ -48,7 +50,7 @@ const Tab2: React.FC = () => {
       await createRepository({
         name: name.trim(),
         description: description.trim() || undefined,
-        private: false, // si tu lab no pide private, déjalo false
+        private: false,
       });
 
       setToastMsg("Repositorio creado correctamente");
@@ -58,10 +60,10 @@ const Tab2: React.FC = () => {
       setDescription("");
 
       // volver a Tab1 (Repositorios)
-      // (la lista se recarga al entrar por useIonViewDidEnter)
-      setTimeout(() => router.push("/tab1", "root"), 800);
+      // Tab1 se recarga al entrar por useIonViewDidEnter
+      setTimeout(() => router.push("/tab1", "root"), 900);
     } catch (e: any) {
-      setErrorMsg(e.message || "Error creando repositorio");
+      setErrorMsg(e?.message || "Error creando repositorio");
     } finally {
       setLoading(false);
     }
@@ -76,6 +78,7 @@ const Tab2: React.FC = () => {
       </IonHeader>
 
       <IonContent fullscreen>
+        {/*Spinner por llamada a la API (POST) */}
         <IonLoading isOpen={loading} message="Creando repositorio..." />
 
         <IonToast
@@ -114,7 +117,12 @@ const Tab2: React.FC = () => {
             rows={6}
           />
 
-          <IonButton expand="block" className="form-field" onClick={handleSave}>
+          <IonButton
+            expand="block"
+            className="form-field"
+            onClick={handleSave}
+            disabled={loading} //bloquea mientras carga
+          >
             Guardar
           </IonButton>
         </div>
@@ -124,4 +132,3 @@ const Tab2: React.FC = () => {
 };
 
 export default Tab2;
-

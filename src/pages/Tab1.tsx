@@ -19,6 +19,7 @@ const Tab1: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
+  //GET /user/repos (con spinner por llamada)
   const loadRepos = async () => {
     try {
       setLoading(true);
@@ -33,12 +34,12 @@ const Tab1: React.FC = () => {
     }
   };
 
-  // Se ejecuta cada vez que entras a Tab1 (recomendado para que esté actualizado)
+  //Se ejecuta cada vez que entras a Tab1 (para tener datos actualizados)
   useIonViewDidEnter(() => {
     loadRepos();
   });
 
-  // BORRA DE LA UI al instante cuando RepoItem confirma que se eliminó
+  //BORRA DE LA UI al instante cuando RepoItem confirma que se eliminó
   const handleRepoDeleted = (fullName: string) => {
     setRepos((prev) =>
       prev.filter((r: any) => {
@@ -57,7 +58,9 @@ const Tab1: React.FC = () => {
       </IonHeader>
 
       <IonContent fullscreen>
-        <IonLoading isOpen={loading} message="Cargando..." />
+        {/*Spinner por llamada a la API */}
+        <IonLoading isOpen={loading} message="Cargando repos..." />
+
         <IonToast
           isOpen={!!msg}
           message={msg}
@@ -72,8 +75,8 @@ const Tab1: React.FC = () => {
               <RepoItem
                 key={key}
                 repo={r}
-                onChanged={loadRepos}           
-                onDeleted={handleRepoDeleted}  
+                onChanged={loadRepos} // recarga lista (GET) después de editar/eliminar
+                onDeleted={handleRepoDeleted} // quita de la UI al instante
               />
             );
           })}

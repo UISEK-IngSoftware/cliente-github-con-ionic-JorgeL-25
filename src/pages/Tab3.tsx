@@ -22,6 +22,7 @@ import { clearAuth } from "../auth";
 
 const Tab3: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("Cargando...");
   const [errorMsg, setErrorMsg] = useState("");
 
   const [userInfo, setUserInfo] = useState({
@@ -31,8 +32,12 @@ const Tab3: React.FC = () => {
     avatar_url: "https://ionicframework.com/docs/img/demos/card-media.png",
   });
 
+  //GET /user (spinner por llamada)
   const loadUserInfo = async () => {
+    if (loading) return;
+
     try {
+      setLoadingMsg("Cargando perfil...");
       setLoading(true);
       setErrorMsg("");
 
@@ -47,14 +52,18 @@ const Tab3: React.FC = () => {
           "https://ionicframework.com/docs/img/demos/card-media.png",
       });
     } catch (e: any) {
-      setErrorMsg(e.message || "Error cargando usuario");
+      setErrorMsg(e?.message || "Error cargando usuario");
     } finally {
       setLoading(false);
     }
   };
 
+  //Logout (spinner por acción)
   const logout = async () => {
+    if (loading) return;
+
     try {
+      setLoadingMsg("Cerrando sesión...");
       setLoading(true);
       setErrorMsg("");
 
@@ -62,10 +71,9 @@ const Tab3: React.FC = () => {
       await clearAuth();
 
       // 2) forzar recarga completa a /login
-      // (esto hace que App.tsx vuelva a leer Storage y ponga isAuth=false)
       window.location.replace("/login");
     } catch (e: any) {
-      setErrorMsg(e.message || "Error al cerrar sesión");
+      setErrorMsg(e?.message || "Error al cerrar sesión");
       setLoading(false);
     }
   };
@@ -83,7 +91,7 @@ const Tab3: React.FC = () => {
       </IonHeader>
 
       <IonContent fullscreen>
-        <IonLoading isOpen={loading} message="Cargando..." />
+        <IonLoading isOpen={loading} message={loadingMsg} />
         <IonToast
           isOpen={!!errorMsg}
           message={errorMsg}
@@ -102,7 +110,12 @@ const Tab3: React.FC = () => {
           <IonCardContent>
             <p>{userInfo.bio}</p>
 
-            <IonButton expand="block" color="danger" onClick={logout}>
+            <IonButton
+              expand="block"
+              color="danger"
+              onClick={logout}
+              disabled={loading}
+            >
               Cierra tu sesión
             </IonButton>
           </IonCardContent>

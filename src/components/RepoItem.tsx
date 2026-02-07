@@ -28,14 +28,15 @@ import "./RepoItem.css";
 
 type Props = {
   repo: RepositoryItem;
-  onChanged: () => void; // recarga lista (fallback)
-  onDeleted?: (fullName: string) => void; 
+  onChanged: () => void;
+  onDeleted?: (fullName: string) => void;
 };
 
 const RepoItem: React.FC<Props> = ({ repo, onChanged, onDeleted }) => {
   const slidingRef = useRef<HTMLIonItemSlidingElement>(null);
 
   const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("Procesando...");
   const [toast, setToast] = useState("");
 
   // Edit modal
@@ -66,7 +67,10 @@ const RepoItem: React.FC<Props> = ({ repo, onChanged, onDeleted }) => {
     setIsEditOpen(true);
   };
 
+  //PATCH /repos/{owner}/{repo}
   const saveEdit = async () => {
+    if (loading) return;
+
     if (!canAct) {
       setToast("No se puede editar: owner inválido.");
       return;
@@ -77,6 +81,7 @@ const RepoItem: React.FC<Props> = ({ repo, onChanged, onDeleted }) => {
     }
 
     try {
+      setLoadingMsg("Actualizando repositorio...");
       setLoading(true);
 
       await updateRepository(repo.owner!, repo.name, {
@@ -87,47 +92,51 @@ const RepoItem: React.FC<Props> = ({ repo, onChanged, onDeleted }) => {
       });
 
       setIsEditOpen(false);
-      setToast("Repositorio actualizado ✅");
+      setToast("Repositorio actualizado");
 
-      // refresca para que se vea el cambio (nombre/desc/privado)
+      await closeSliding();
       onChanged();
     } catch (e: any) {
       setToast(e?.message || "Error actualizando repo");
     } finally {
       setLoading(false);
+      setLoadingMsg("Procesando...");
     }
   };
 
+  //DELETE /repos/{owner}/{repo}
   const confirmDelete = async () => {
+    if (loading) return;
+
     if (!canAct) {
       setToast("No se puede eliminar: owner inválido.");
       return;
     }
 
     try {
+      setLoadingMsg("Eliminando repositorio...");
       setLoading(true);
 
       await deleteRepository(repo.owner!, repo.name);
 
-      setToast("Repositorio eliminado ✅");
+      setToast("Repositorio eliminado");
 
-      // BORRA DE LA UI AL INSTANTE
-      if (onDeleted) {
-        onDeleted(fullName);
-      } else {
-        // fallback: recargar lista si no te pasan onDeleted
-        onChanged();
-      }
+      await closeSliding();
+
+      //Borra de la UI al instante
+      if (onDeleted) onDeleted(fullName);
+      else onChanged();
     } catch (e: any) {
       setToast(e?.message || "Error eliminando repo");
     } finally {
       setLoading(false);
+      setLoadingMsg("Procesando...");
     }
   };
 
   return (
     <>
-      <IonLoading isOpen={loading} message="Procesando..." />
+      <IonLoading isOpen={loading} message={loadingMsg} />
 
       <IonToast
         isOpen={!!toast}
@@ -152,7 +161,6 @@ const RepoItem: React.FC<Props> = ({ repo, onChanged, onDeleted }) => {
             role: "destructive",
             handler: () => {
               setIsDeleteOpen(false);
-              // no uses await aquí (handler de Ionic)
               confirmDelete();
             },
           },
@@ -161,15 +169,14 @@ const RepoItem: React.FC<Props> = ({ repo, onChanged, onDeleted }) => {
       />
 
       {/* MODAL DE EDITAR */}
-      <IonModal
-        isOpen={isEditOpen}
-        onDidDismiss={() => setIsEditOpen(false)}
-      >
+      <IonModal isOpen={isEditOpen} onDidDismiss={() => setIsEditOpen(false)}>
         <IonHeader>
           <IonToolbar>
             <IonTitle>Editar Repo</IonTitle>
             <IonButtons slot="end">
-              <IonButton onClick={() => setIsEditOpen(false)}>Cerrar</IonButton>
+              <IonButton disabled={loading} onClick={() => setIsEditOpen(false)}>
+                Cerrar
+              </IonButton>
             </IonButtons>
           </IonToolbar>
         </IonHeader>
@@ -206,7 +213,11 @@ const RepoItem: React.FC<Props> = ({ repo, onChanged, onDeleted }) => {
 
           <div style={{ height: 16 }} />
 
-          <IonButton expand="block" onClick={saveEdit} disabled={!canAct}>
+          <IonButton
+            expand="block"
+            onClick={saveEdit}
+            disabled={!canAct || loading}
+          >
             Guardar tus cambios
           </IonButton>
 
@@ -214,6 +225,7 @@ const RepoItem: React.FC<Props> = ({ repo, onChanged, onDeleted }) => {
             expand="block"
             color="medium"
             onClick={() => setIsEditOpen(false)}
+            disabled={loading}
           >
             Cancelar
           </IonButton>
@@ -245,9 +257,12 @@ const RepoItem: React.FC<Props> = ({ repo, onChanged, onDeleted }) => {
           </IonLabel>
         </IonItem>
 
-        {/* BOTONES (icono + texto) */}
         <IonItemOptions side="end">
-          <IonItemOption color="warning" onClick={openEdit} disabled={!canAct}>
+          <IonItemOption
+            color="warning"
+            onClick={openEdit}
+            disabled={!canAct || loading}
+          >
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <IonIcon icon={createOutline} />
               <span>Editar</span>
@@ -260,7 +275,7 @@ const RepoItem: React.FC<Props> = ({ repo, onChanged, onDeleted }) => {
               await closeSliding();
               setIsDeleteOpen(true);
             }}
-            disabled={!canAct}
+            disabled={!canAct || loading}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <IonIcon icon={trashOutline} />
